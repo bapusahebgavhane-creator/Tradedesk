@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TradeDesk — Dhan-style Trading Terminal</title>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{--bg:#080b10;--panel:#10141b;--panel2:#151a22;--line:#252b35;--txt:#e7ebf2;--muted:#8791a1;--green:#20c997;--red:#ff5b67;--orange:#ffb454;--blue:#4d8dff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:13px Arial,sans-serif;overflow:hidden}
+button,input,select{font:inherit;color:inherit;border:0;outline:0}button{cursor:pointer}.app{height:100vh;display:grid;grid-template-rows:52px 1fr 31px}
+.top{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#0e1218;border-bottom:1px solid var(--line)}
+.logo{font-size:20px;font-weight:800;padding:0 10px}.logo span{color:var(--green)}.search{height:34px;background:#171c24;border:1px solid #303744;border-radius:6px;padding:0 10px;width:190px}.search input{background:none;width:145px}.nav{display:flex;gap:2px}.nav button,.icon{height:34px;padding:0 10px;background:transparent;border-radius:5px;color:#b5bdca}.nav button:hover,.icon:hover{background:#202731;color:#fff}.grow{flex:1}.funds{display:flex;gap:14px;color:#9ba5b4}.funds b{color:#e7ebf2}.primary{background:#1e9b73!important;color:white!important;border-radius:5px!important;padding:8px 13px!important}
+.main{display:grid;grid-template-columns:240px minmax(0,1fr) 330px;min-height:0}.left,.right{background:var(--panel);min-width:0}.left{border-right:1px solid var(--line);display:flex;flex-direction:column}.right{border-left:1px solid var(--line);display:flex;flex-direction:column}
+.paneltitle{padding:12px;border-bottom:1px solid var(--line);font-weight:700;display:flex;justify-content:space-between}.watch{overflow:auto;flex:1}.wrow{padding:10px 12px;border-bottom:1px solid #1d222a;cursor:pointer;display:flex;justify-content:space-between}.wrow:hover,.wrow.active{background:#19202a}.name{font-weight:700}.small{font-size:11px;color:var(--muted);margin-top:3px}.price{text-align:right}.up{color:var(--green)}.down{color:var(--red)}
+.center{min-width:0;min-height:0;display:grid;grid-template-rows:46px 1fr 150px}.bar{display:flex;align-items:center;gap:5px;padding:5px 8px;border-bottom:1px solid var(--line);background:#0d1117}.bar button,.bar select{padding:7px 9px;border-radius:5px;background:transparent;color:#aeb7c5}.bar button:hover,.bar button.active{background:#222a35;color:#fff}.chartbox{position:relative;min-height:0}.chart{position:absolute;inset:0}.bottompanel{background:var(--panel);border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;min-height:0}.positions,.orders{padding:10px;overflow:auto}.boxtitle{font-weight:700;margin-bottom:7px}.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed #303744;border-radius:6px}
+.order{background:var(--panel2);padding:12px;border-top:1px solid var(--line)}.side-tabs{display:flex}.side-tabs button{flex:1;padding:12px 4px;background:transparent;color:var(--muted)}.side-tabs button.active{color:#fff;border-bottom:2px solid var(--green)}.orderbody{padding:12px;overflow:auto}.seg{display:flex;background:#1a2029;border-radius:6px;padding:3px}.seg button{flex:1;padding:8px;background:transparent;border-radius:4px}.seg .buy.active{background:#176b53}.seg .sell.active{background:#8d313b}.field{margin-top:10px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.field input,.field select{width:100%;padding:9px;background:#0c1016;border:1px solid #303744;border-radius:5px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.place{width:100%;margin-top:12px;padding:11px;border-radius:6px;background:var(--green);color:#fff;font-weight:700}.danger{background:#a93844}.option{margin-top:12px;border:1px solid var(--line);border-radius:6px;overflow:auto}.chain{width:100%;border-collapse:collapse;font-size:11px}.chain th,.chain td{padding:7px 5px;text-align:right;border-bottom:1px solid #202630;white-space:nowrap}.chain th{color:var(--muted);background:#131820}.call{color:#6fdab7}.put{color:#ff8991}.strike{font-weight:700;color:#fff;background:#1a2028}.footer{display:flex;align-items:center;gap:18px;padding:0 12px;background:#0e1218;border-top:1px solid var(--line);color:var(--muted)}.footer .status{margin-left:auto;color:#21c997}
+.toast{position:fixed;right:20px;bottom:45px;background:#222a34;border:1px solid #3a4554;padding:11px 15px;border-radius:6px;display:none;z-index:5}.toast.show{display:block}
+@media(max-width:1050px){.main{grid-template-columns:190px minmax(0,1fr)}.right{display:none}.funds{display:none}}@media(max-width:700px){.main{grid-template-columns:1fr}.left{display:none}.nav{display:none}.search{width:130px}.search input{width:95px}.center{grid-template-rows:43px 1fr 120px}.bottompanel{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="logo">Trade<span>Desk</span></div>
+  <div class="search">⌕ <input id="search" value="NIFTY" placeholder="Search stocks, options..."></div>
+  <div class="nav"><button id="watchBtn">Watchlist</button><button id="optionBtn">Option Chain</button><button id="ordersBtn">Orders</button><button id="portfolioBtn">Portfolio</button></div>
+  <div class="grow"></div>
+  <div class="funds"><span>Available <b>₹1,00,000</b></span><span>P&L <b class="up">₹0.00</b></span></div>
+  <button class="primary" id="addFunds">Add Funds</button><button class="icon">⚙</button>
+</header>
+
+<main class="main">
+<aside class="left">
+ <div class="paneltitle">Watchlist <span>＋</span></div>
+ <div id="watch" class="watch"></div>
+ <div class="order"><div class="boxtitle">Quick Trade</div><div class="small">Select a symbol to prepare an order.</div></div>
+</aside>
+
+<section class="center">
+ <div class="bar">
+   <b id="selected">NIFTY 50</b><span class="small" id="exchange">NSE</span>
+   <button class="tf" data-tf="1m">1m</button><button class="tf active" data-tf="5m">5m</button><button class="tf" data-tf="15m">15m</button><button class="tf" data-tf="1h">1H</button><button class="tf" data-tf="1d">1D</button>
+   <span style="border-left:1px solid #303744;height:22px"></span>
+   <button id="indicator">ƒx Indicators</button><button id="super">Supertrend</button><button id="vwap">VWAP</button><button id="sma">SMA20</button>
+   <span class="grow"></span><button id="fullscreen">⛶</button>
+ </div>
+ <div class="chartbox"><div id="chart" class="chart"></div></div>
+ <div class="bottompanel">
+   <div class="positions"><div class="boxtitle">Positions</div><div id="positionBox" class="empty">No open positions</div></div>
+   <div class="orders"><div class="boxtitle">Orders</div><div id="orderBox" class="empty">No orders placed in this demo</div></div>
+ </div>
+</section>
+
+<aside class="right">
+ <div class="side-tabs"><button class="active" data-side="order">Order</button><button data-side="chain">Option Chain</button></div>
+ <div id="orderPanel" class="orderbody">
+  <div class="seg"><button class="buy active" id="buy">BUY</button><button class="sell" id="sell">SELL</button></div>
+  <div class="field"><label>Instrument</label><select id="instrument"><option>NIFTY 50</option><option>BANKNIFTY</option><option>RELIANCE</option><option>HDFCBANK</option><option>TCS</option></select></div>
+  <div class="grid2"><div class="field"><label>Product</label><select><option>Intraday</option><option>Delivery</option></select></div><div class="field"><label>Order Type</label><select><option>Market</option><option>Limit</option><option>SL-L</option></select></div></div>
+  <div class="grid2"><div class="field"><label>Quantity</label><input id="qty" type="number" value="50"></div><div class="field"><label>Price</label><input id="orderPrice" type="number" placeholder="Market"></div></div>
+  <div class="grid2"><div class="field"><label>Stop Loss</label><input id="sl" type="number" placeholder="Optional"></div><div class="field"><label>Target</label><input id="target" type="number" placeholder="Optional"></div></div>
+  <button class="place" id="place">PLACE BUY ORDER</button>
+  <div class="small" style="margin-top:9px">Demo mode: हा पेज वास्तविक broker order पाठवत नाही.</div>
+ </div>
+ <div id="chainPanel" class="orderbody" style="display:none">
+  <div class="grid2"><div class="field"><label>Underlying</label><select><option>NIFTY</option><option>BANKNIFTY</option></select></div><div class="field"><label>Expiry</label><select><option>Nearest</option><option>Next</option></select></div></div>
+  <div class="option"><table class="chain"><thead><tr><th>OI</th><th>Call LTP</th><th>IV</th><th>Strike</th><th>IV</th><th>Put LTP</th><th>OI</th></tr></thead><tbody id="chain"></tbody></table></div>
+ </div>
+</aside>
+</main>
+<footer class="footer"><span>NSE</span><span>Market</span><span>Charts</span><span>Trade</span><span>Analytics</span><span class="status">● Prototype • Live API जोडण्यासाठी broker credentials/API आवश्यक</span></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+let tf='5m',selected='NIFTY',showVWAP=false,showSMA=false,showST=false,chartData=[];
+const chart=LightweightCharts.createChart($('#chart'),{layout:{background:{color:'#080b10'},textColor:'#9ba5b4'},grid:{vertLines:{color:'#141a21'},horzLines:{color:'#141a21'}},rightPriceScale:{borderColor:'#29303a'},timeScale:{borderColor:'#29303a',timeVisible:true},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
+const candles=chart.addCandlestickSeries({upColor:'#20c997',downColor:'#ff5b67',borderUpColor:'#20c997',borderDownColor:'#ff5b67',wickUpColor:'#20c997',wickDownColor:'#ff5b67'});
+const volume=chart.addHistogramSeries({priceScaleId:'v',priceFormat:{type:'volume'}});
+chart.priceScale('v').applyOptions({scaleMargins:{top:.82,bottom:0}});
+const sma=chart.addLineSeries({color:'#4d8dff',lineWidth:2,priceLineVisible:false,lastValueVisible:false});
+const vwap=chart.addLineSeries({color:'#b56cff',lineWidth:2,priceLineVisible:false,lastValueVisible:false});
+const st=chart.addLineSeries({color:'#ffb454',lineWidth:2,priceLineVisible:false,lastValueVisible:false});
+
+function makeData(){let base=selected==='BANKNIFTY'?52000:selected==='RELIANCE'?1400:selected==='HDFCBANK'?900:selected==='TCS'?3900:25000;let now=Math.floor(Date.now()/1000);let arr=[],p=base;for(let i=0;i<420;i++){let t=now-(420-i)*300;p*=1+(Math.random()-.48)*.0018;let o=p*(1+(Math.random()-.5)*.001),c=p*(1+(Math.random()-.5)*.0018),h=Math.max(o,c)*(1+Math.random()*.001),l=Math.min(o,c)*(1-Math.random()*.001);arr.push({time:t,open:o,high:h,low:l,close:c,vol:Math.round(100000+Math.random()*800000)})}return arr}
+function calcSMA(n){let a=[],sum=0;for(let i=0;i<chartData.length;i++){sum+=chartData[i].close;if(i>=n)sum-=chartData[i-n].close;if(i>=n-1)a.push({time:chartData[i].time,value:sum/n})}return a}
+function calcVWAP(){let p=0,v=0,a=[];for(let c of chartData){p+=((c.high+c.low+c.close)/3)*c.vol;v+=c.vol;a.push({time:c.time,value:p/v})}return a}
+function calcST(){let a=[];for(let i=0;i<chartData.length;i++){let c=chartData[i],avg=(c.high+c.low)/2,atr=(c.high-c.low)*2.2;a.push({time:c.time,value:c.close>=avg?avg-atr:avg+atr})}return a}
+function render(){chartData=makeData();candles.setData(chartData);volume.setData(chartData.map(c=>({time:c.time,value:c.vol,color:c.close>=c.open?'#1b594b':'#60313a'})));sma.setData(showSMA?calcSMA(20):[]);vwap.setData(showVWAP?calcVWAP():[]);st.setData(showST?calcST():[]);chart.timeScale().fitContent();$('#selected').textContent=selected==='NIFTY'?'NIFTY 50':selected;$('#exchange').textContent='NSE';}
+function toast(x){$('#toast').textContent=x;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),1700)}
+const syms=[['NIFTY','NIFTY 50'],['BANKNIFTY','BANKNIFTY'],['RELIANCE','RELIANCE'],['HDFCBANK','HDFC BANK'],['TCS','TCS'],['ICICIBANK','ICICI BANK'],['INFY','INFOSYS'],['SBIN','SBI'],['TATASTEEL','TATA STEEL']];
+$('#watch').innerHTML=syms.map((x,i)=>`<div class="wrow ${i===0?'active':''}" data-s="${x[0]}"><div><div class="name">${x[1]}</div><div class="small">NSE • Equity</div></div><div class="price"><div class="name">${(100+i*37.4).toFixed(2)}</div><div class="small up">+0.48%</div></div></div>`).join('');
+$$('.wrow').forEach(r=>r.onclick=()=>{$$('.wrow').forEach(x=>x.classList.remove('active'));r.classList.add('active');selected=r.dataset.s;render()});
+$$('.tf').forEach(b=>b.onclick=()=>{$$('.tf').forEach(x=>x.classList.remove('active'));b.classList.add('active');tf=b.dataset.tf;render()});
+$('#vwap').onclick=()=>{showVWAP=!showVWAP;$('#vwap').classList.toggle('active');vwap.setData(showVWAP?calcVWAP():[])};
+$('#sma').onclick=()=>{showSMA=!showSMA;$('#sma').classList.toggle('active');sma.setData(showSMA?calcSMA(20):[])};
+$('#super').onclick=()=>{showST=!showST;$('#super').classList.toggle('active');st.setData(showST?calcST():[])};
+$('#indicator').onclick=()=>toast('Indicators: SMA, VWAP, Supertrend तयार आहेत');
+$('#fullscreen').onclick=()=>document.documentElement.requestFullscreen?.();
+$('#buy').onclick=()=>{ $('#buy').classList.add('active');$('#sell').classList.remove('active');$('#place').className='place';$('#place').textContent='PLACE BUY ORDER'};
+$('#sell').onclick=()=>{ $('#sell').classList.add('active');$('#buy').classList.remove('active');$('#place').className='place danger';$('#place').textContent='PLACE SELL ORDER'};
+$('#place').onclick=()=>{let side=$('#buy').classList.contains('active')?'BUY':'SELL';$('#orderBox').className='';$('#orderBox').innerHTML=`<b>${side}</b> • ${$('#instrument').value} • Qty ${$('#qty').value}<br><span class="small">Demo order created at ${new Date().toLocaleTimeString()}</span>`;toast('Demo order तयार झाला')};
+$('#instrument').onchange=e=>{selected=e.target.value.replace(' ','');render()};
+$('#addFunds').onclick=()=>toast('Demo: funds module');
+$('#watchBtn').onclick=()=>toast('Watchlist डावीकडे आहे');
+$('#ordersBtn').onclick=()=>$('#orderBox').scrollIntoView();
+$('#portfolioBtn').onclick=()=>toast('Portfolio module');
+$('#optionBtn').onclick=()=>{$('[data-side="chain"]').click()};
+$$('.side-tabs button').forEach(b=>b.onclick=()=>{$$('.side-tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#orderPanel').style.display=b.dataset.side==='order'?'block':'none';$('#chainPanel').style.display=b.dataset.side==='chain'?'block':'none'});
+$('#search').addEventListener('keydown',e=>{if(e.key==='Enter'){selected=e.target.value.toUpperCase().replace(/[^A-Z]/g,'');render();toast('Symbol बदलला')}});
+let strikes=[24800,24900,25000,25100,25200,25300,25400];$('#chain').innerHTML=strikes.map((s,i)=>`<tr><td>${(12+i*3)}K</td><td class="call">${(110-i*7).toFixed(2)}</td><td>${12+i}.4%</td><td class="strike">${s}</td><td>${13+i}.1%</td><td class="put">${(95+i*8).toFixed(2)}</td><td>${(15+i*2)}K</td></tr>`).join('');
+new ResizeObserver(()=>chart.applyOptions({width:$('#chart').clientWidth,height:$('#chart').clientHeight})).observe($('#chart'));
+render();
+</script>
+</body>
+</html>
